@@ -1,7 +1,36 @@
 import { supabase } from '../../lib/supabase'
-import type { Activity, Category, Lead, Product, ProductPrice, Stage } from './types'
+import type { Activity, Category, InterestLevel, Lead, Product, ProductPrice, Stage } from './types'
 
 export const PAGE_SIZE = 10
+
+export const interestLevels: { value: InterestLevel; label: string }[] = [
+  { value: 'very_interested', label: 'Very interested' },
+  { value: 'semi_interested', label: 'Semi interested' },
+  { value: 'lightly_interested', label: 'Lightly interested' },
+  { value: 'neutral', label: 'Neutral' },
+]
+
+export function interestLabel(level: InterestLevel | null | undefined) {
+  return interestLevels.find((item) => item.value === level)?.label ?? 'Neutral'
+}
+
+export function interestSurface(level: InterestLevel | null | undefined) {
+  switch (level) {
+    case 'very_interested': return 'border-green-300 bg-green-100'
+    case 'semi_interested': return 'border-yellow-300 bg-yellow-100'
+    case 'lightly_interested': return 'border-yellow-200 bg-yellow-50'
+    default: return 'border-slate-200 bg-white'
+  }
+}
+
+export function interestBadge(level: InterestLevel | null | undefined) {
+  switch (level) {
+    case 'very_interested': return 'bg-green-200 text-green-900'
+    case 'semi_interested': return 'bg-yellow-200 text-yellow-900'
+    case 'lightly_interested': return 'bg-yellow-100 text-yellow-800'
+    default: return 'bg-slate-100 text-slate-700'
+  }
+}
 
 export async function loadLookups() {
   const [categories, stages, products] = await Promise.all([

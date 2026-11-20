@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { AlertCircle, ArrowRight, CalendarCheck2, CircleDollarSign, Clock3, Flame, LoaderCircle, RefreshCw, Trophy, type LucideIcon } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { Category, Lead, Stage } from './leads/types'
-import { errorText, formatPrice } from './leads/leadUtils'
+import { errorText, formatPrice, interestBadge, interestLabel, interestSurface } from './leads/leadUtils'
 
 type QuoteRow = { id: string; lead_id: string; total: number; currency: string; status: string; created_at: string }
 type DashboardData = {
@@ -148,7 +148,7 @@ export function DashboardPage() {
         </section>
       </div>
       <section className="rounded-xl border border-slate-200 bg-white"><header className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-5 py-4 sm:px-6"><div className="flex items-center gap-2"><Flame size={18} className="text-orange-500"/><div><h2 className="font-semibold text-slate-900">Cold leads</h2><p className="mt-1 text-xs text-slate-500">No logged activity in 14+ days</p></div></div><Link to="/leads" className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:underline">All leads<ArrowRight size={14}/></Link></header>
-        {data.coldLeads.length ? <ul className="divide-y divide-slate-100 sm:grid sm:grid-cols-2 sm:divide-y-0">{data.coldLeads.map((lead, index) => <li key={lead.id} className={`flex items-center justify-between gap-3 px-5 py-4 sm:px-6 ${index % 2 ? 'sm:border-l sm:border-slate-100' : ''} ${index > 1 ? 'sm:border-t sm:border-slate-100' : ''}`}><div className="min-w-0"><Link to={`/leads/${lead.id}`} className="truncate font-semibold text-slate-800 hover:text-indigo-600">{lead.company_name}</Link><p className="mt-1 truncate text-xs text-slate-500">{lead.contact_person || lead.email || 'No contact details'}</p></div><span className="flex shrink-0 items-center gap-1 text-xs text-slate-400"><Clock3 size={13}/>14+ days</span></li>)}</ul> : <EmptyState title="No cold leads" text="Leads with no activity for two weeks or more will appear here."/>}
+        {data.coldLeads.length ? <ul className="divide-y divide-slate-100 sm:grid sm:grid-cols-2 sm:divide-y-0">{data.coldLeads.map((lead, index) => <li key={lead.id} className={`flex flex-wrap items-center justify-between gap-3 px-5 py-4 sm:px-6 ${interestSurface(lead.interest_level)} ${index % 2 ? 'sm:border-l sm:border-slate-100' : ''} ${index > 1 ? 'sm:border-t sm:border-slate-100' : ''}`}><div className="min-w-0"><Link to={`/leads/${lead.id}`} className="break-words font-semibold text-slate-800 hover:text-indigo-600">{lead.company_name}</Link><p className="mt-1 truncate text-xs text-slate-500">{lead.contact_person || lead.email || 'No contact details'}</p></div><span className={`rounded-full px-2 py-1 text-[11px] font-medium ${interestBadge(lead.interest_level)}`}>{interestLabel(lead.interest_level)}</span><span className="flex shrink-0 items-center gap-1 text-xs text-slate-400"><Clock3 size={13}/>14+ days</span></li>)}</ul> : <EmptyState title="No cold leads" text="Leads with no activity for two weeks or more will appear here."/>}
       </section>
     </>}
   </div>

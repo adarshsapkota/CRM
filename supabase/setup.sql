@@ -71,6 +71,7 @@ create table public.leads (
   next_follow_up_date date,
   source text,
   lead_direction text not null default 'outbound' check (lead_direction in ('outbound', 'inbound')),
+  interest_level text not null default 'neutral' check (interest_level in ('very_interested', 'semi_interested', 'lightly_interested', 'neutral')),
   notes text,
   owner_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
   created_at timestamptz not null default now(),

@@ -4,15 +4,15 @@ import { ArrowLeft, LoaderCircle } from 'lucide-react'
 import { useAuth } from '../../auth/AuthProvider'
 import { supabase } from '../../lib/supabase'
 import { useToast } from '../../components/ToastProvider'
-import { errorText, formatPrice, getLeadProducts, getOwnedLead, getProductPrices, loadLookups, syncLeadProducts } from './leadUtils'
-import type { Category, Product, ProductPrice, Stage } from './types'
+import { errorText, formatPrice, getLeadProducts, getOwnedLead, getProductPrices, interestLevels, interestLabel, interestSurface, loadLookups, syncLeadProducts } from './leadUtils'
+import type { Category, InterestLevel, Product, ProductPrice, Stage } from './types'
 
 type FormState = {
   company_name: string; contact_person: string; phone: string; email: string; address: string;
   category_id: string; existing_website: string; stage_id: string; next_follow_up_date: string;
-  notes: string; source: string; lead_direction: 'outbound' | 'inbound'; social_media: Record<string, string>; product_ids: string[];
+  notes: string; source: string; lead_direction: 'outbound' | 'inbound'; interest_level: InterestLevel; social_media: Record<string, string>; product_ids: string[];
 }
-const emptyForm: FormState = { company_name: '', contact_person: '', phone: '', email: '', address: '', category_id: '', existing_website: '', stage_id: '', next_follow_up_date: '', notes: '', source: '', lead_direction: 'outbound', social_media: { facebook: '', instagram: '', linkedin: '', tiktok: '', other: '' }, product_ids: [] }
+const emptyForm: FormState = { company_name: '', contact_person: '', phone: '', email: '', address: '', category_id: '', existing_website: '', stage_id: '', next_follow_up_date: '', notes: '', source: '', lead_direction: 'outbound', interest_level: 'neutral', social_media: { facebook: '', instagram: '', linkedin: '', tiktok: '', other: '' }, product_ids: [] }
 const socialKeys = ['facebook', 'instagram', 'linkedin', 'tiktok', 'other'] as const
 
 export function LeadFormPage() {
@@ -45,7 +45,7 @@ export function LeadFormPage() {
           setForm({
             company_name: lead.company_name, contact_person: lead.contact_person ?? '', phone: lead.phone ?? '', email: lead.email ?? '', address: lead.address ?? '',
             category_id: lead.category_id ?? '', existing_website: lead.existing_website ?? '', stage_id: lead.stage_id, next_follow_up_date: lead.next_follow_up_date ?? '',
-            notes: lead.notes ?? '', source: lead.source ?? '', lead_direction: lead.lead_direction ?? 'outbound', social_media: Object.fromEntries(socialKeys.map((key) => [key, lead.social_media?.[key] ?? ''])), product_ids: productIds,
+            notes: lead.notes ?? '', source: lead.source ?? '', lead_direction: lead.lead_direction ?? 'outbound', interest_level: lead.interest_level ?? 'neutral', social_media: Object.fromEntries(socialKeys.map((key) => [key, lead.social_media?.[key] ?? ''])), product_ids: productIds,
           })
         } else if (lookups.stages.length) {
           const initial = lookups.stages.find((stage) => stage.name === 'New') ?? lookups.stages[0]
@@ -78,7 +78,7 @@ export function LeadFormPage() {
       existing_website: form.existing_website.trim() || null,
       social_media: Object.fromEntries(socialKeys.map((key) => [key, form.social_media[key].trim()]).filter(([, value]) => value)),
       stage_id: form.stage_id, next_follow_up_date: form.next_follow_up_date || null, notes: form.notes.trim() || null,
-      lead_direction: form.lead_direction, source: form.source.trim() || null,
+      lead_direction: form.lead_direction, interest_level: form.interest_level, source: form.source.trim() || null,
     }
     try {
       let savedLeadId = leadId
@@ -138,6 +138,7 @@ export function LeadFormPage() {
         <h2 className="mb-5 text-base font-semibold text-slate-900">Opportunity</h2>
         <div className="grid gap-5 sm:grid-cols-2">
           <label className="text-sm font-medium text-slate-700">Category<select className="field mt-2" value={form.category_id} onChange={(e) => set('category_id', e.target.value)}><option value="">Select category</option>{categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
+          <label className="text-sm font-medium text-slate-700">Interest level<select className={`field mt-2 ${interestSurface(form.interest_level)}`} value={form.interest_level} onChange={(e) => set('interest_level', e.target.value as InterestLevel)}>{interestLevels.map((level) => <option key={level.value} value={level.value}>{level.label}</option>)}</select><span className="mt-1 block text-xs font-normal text-slate-500">{interestLabel(form.interest_level)} leads use matching colors on your pipeline.</span></label>
           <label className="text-sm font-medium text-slate-700">Lead direction<select className="field mt-2" value={form.lead_direction} onChange={(e) => set('lead_direction', e.target.value as FormState['lead_direction'])}><option value="outbound">Outbound — we contacted them</option><option value="inbound">Inbound — they contacted us</option></select><span className="mt-1 block text-xs font-normal text-slate-400">Inbound includes requests from your website, social media, or other platforms.</span></label>
           <label className="text-sm font-medium text-slate-700">Source platform<input className="field mt-2" placeholder="Website, Facebook, referral…" value={form.source} onChange={(e) => set('source', e.target.value)}/></label>
           <label className="text-sm font-medium text-slate-700">Stage<select required disabled={editing} className="field mt-2 disabled:bg-slate-100" value={form.stage_id} onChange={(e) => set('stage_id', e.target.value)}><option value="">Select stage</option>{stages.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select>{editing && <span className="mt-1 block text-xs font-normal text-slate-400">Change a lead’s stage on the pipeline board to log the transition.</span>}</label>
@@ -151,7 +152,7 @@ export function LeadFormPage() {
         <div className="grid gap-4 sm:grid-cols-2">{socialKeys.map((key) => <label key={key} className="text-sm font-medium capitalize text-slate-700">{key === 'other' ? 'Other link' : key}<input type="url" className="field mt-2" placeholder="https://" value={form.social_media[key]} onChange={(e) => setForm((current) => ({ ...current, social_media: { ...current.social_media, [key]: e.target.value } }))}/></label>)}</div>
       </section>
       <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-7"><label className="block text-sm font-medium text-slate-700">Notes<textarea rows={5} className="field mt-2" placeholder="Context, needs, or conversation notes…" value={form.notes} onChange={(e) => set('notes', e.target.value)}/></label></section>
-      <div className="flex justify-end gap-3"><Link to={editing && leadId ? `/leads/${leadId}` : '/leads'} className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700">Cancel</Link><button disabled={saving} className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60">{saving && <LoaderCircle size={16} className="animate-spin"/>}{saving ? 'Saving…' : editing ? 'Save changes' : 'Create lead'}</button></div>
+      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3"><Link to={editing && leadId ? `/leads/${leadId}` : '/leads'} className="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700">Cancel</Link><button disabled={saving} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60">{saving && <LoaderCircle size={16} className="animate-spin"/>}{saving ? 'Saving…' : editing ? 'Save changes' : 'Create lead'}</button></div>
     </form>
   </div>
 }

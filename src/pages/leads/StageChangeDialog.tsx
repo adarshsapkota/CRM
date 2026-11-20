@@ -65,8 +65,8 @@ export function StageChangeDialog({ lead, target, onClose, onSaved }: { lead: Le
     finally { setBusy(false) }
   }
 
-  return <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/40 p-4" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget && !busy) onClose() }}>
-    <form onSubmit={(e) => void submit(e)} role="dialog" aria-modal="true" aria-labelledby="stage-change-title" className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+  return <div className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-slate-950/40 p-3 sm:p-4" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget && !busy) onClose() }}>
+    <form onSubmit={(e) => void submit(e)} role="dialog" aria-modal="true" aria-labelledby="stage-change-title" className="max-h-[calc(100dvh-1.5rem)] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-4 shadow-xl sm:max-h-[calc(100dvh-2rem)] sm:p-6">
       <div className="flex items-start justify-between"><div><h2 id="stage-change-title" className="text-lg font-semibold text-slate-900">Move to {target.name}</h2><p className="mt-1 text-sm text-slate-500">{lead.company_name}</p></div><button type="button" disabled={busy} aria-label="Close" onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100"><X size={19}/></button></div>
       {entersFollowup ? <div className="mt-5 space-y-4">
         {previousNumber && <p className="rounded-lg bg-indigo-50 px-3 py-2 text-sm text-indigo-800">This completes open follow-up #{previousNumber}. Record the outcome, then schedule this follow-up.</p>}

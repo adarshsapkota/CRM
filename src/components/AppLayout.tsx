@@ -12,6 +12,7 @@ const navItems = [
   { label: 'Quotes', to: '/quotes', icon: FileText },
   { label: 'Settings', to: '/settings', icon: Settings },
 ]
+const mobileNavItems = navItems.slice(0, 4)
 
 export function AppLayout() {
   const { user } = useAuth()
@@ -58,13 +59,18 @@ export function AppLayout() {
         <aside className="relative h-full w-72 max-w-[85vw]">{sidebar}</aside>
       </div>}
       <div className="lg:pl-64">
-        <header className="sticky top-0 z-20 flex h-[72px] items-center justify-between border-b border-slate-200 bg-white/90 px-4 backdrop-blur sm:px-8">
+        <header className="sticky top-0 z-20 flex h-[60px] items-center justify-between border-b border-slate-200 bg-white/95 px-3 backdrop-blur sm:h-[72px] sm:px-8">
           <button aria-label={mobileOpen ? 'Close menu' : 'Open menu'} onClick={() => setMobileOpen(!mobileOpen)} className="rounded-lg p-2 text-slate-600 hover:bg-slate-100 lg:hidden">{mobileOpen ? <X size={21} /> : <Menu size={21} />}</button>
+          <div className="text-sm font-semibold text-slate-700 sm:hidden">CRM <span className="font-normal text-slate-400">by Aadu</span></div>
           <div className="hidden text-sm text-slate-500 sm:block">Your sales workspace</div>
           <button aria-label="Notifications" className="ml-auto rounded-lg p-2.5 text-slate-500 hover:bg-slate-100"><Bell size={19} /></button>
         </header>
-        <main className="mx-auto max-w-7xl p-4 sm:p-8"><Outlet /></main>
+        <main className="mx-auto max-w-7xl px-3 pb-24 pt-4 sm:p-8 lg:pb-8"><Outlet /></main>
       </div>
+      <nav aria-label="Primary mobile navigation" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
+        {mobileNavItems.map(({ label, to, icon: Icon }) => <NavLink key={to} to={to} className={({ isActive }) => `flex min-h-14 flex-col items-center justify-center gap-1 px-1 py-2 text-[10px] font-medium ${isActive ? 'text-indigo-700' : 'text-slate-500'}`}><Icon size={18} strokeWidth={1.9}/><span>{label}</span></NavLink>)}
+        <button onClick={() => setMobileOpen(true)} className="flex min-h-14 flex-col items-center justify-center gap-1 px-1 py-2 text-[10px] font-medium text-slate-500"><Menu size={18}/><span>More</span></button>
+      </nav>
     </div>
   )
 }

@@ -6,10 +6,10 @@ import { supabase } from '../../lib/supabase'
 import { errorText, loadLookups } from './leadUtils'
 import type { Category, Product, Stage } from './types'
 
-type Target = 'company_name' | 'contact_person' | 'phone' | 'email' | 'address' | 'category' | 'stage' | 'lead_direction' | 'next_follow_up_date' | 'existing_website' | 'notes' | 'source' | 'facebook' | 'instagram' | 'linkedin' | 'tiktok' | 'other' | 'products'
+type Target = 'company_name' | 'contact_person' | 'phone' | 'email' | 'address' | 'category' | 'stage' | 'lead_direction' | 'interest_level' | 'next_follow_up_date' | 'existing_website' | 'notes' | 'source' | 'facebook' | 'instagram' | 'linkedin' | 'tiktok' | 'other' | 'products'
 const targets: { key: Target; label: string }[] = [
   { key: 'company_name', label: 'Company name (required)' }, { key: 'contact_person', label: 'Contact person' }, { key: 'phone', label: 'Phone' }, { key: 'email', label: 'Email' }, { key: 'address', label: 'Address' },
-  { key: 'category', label: 'Category name' }, { key: 'stage', label: 'Pipeline stage name' }, { key: 'lead_direction', label: 'Lead direction (inbound/outbound)' }, { key: 'next_follow_up_date', label: 'Next follow-up date' }, { key: 'existing_website', label: 'Existing website' }, { key: 'notes', label: 'Notes' }, { key: 'source', label: 'Source platform' },
+  { key: 'category', label: 'Category name' }, { key: 'stage', label: 'Pipeline stage name' }, { key: 'lead_direction', label: 'Lead direction (inbound/outbound)' }, { key: 'interest_level', label: 'Interest level' }, { key: 'next_follow_up_date', label: 'Next follow-up date' }, { key: 'existing_website', label: 'Existing website' }, { key: 'notes', label: 'Notes' }, { key: 'source', label: 'Source platform' },
   { key: 'facebook', label: 'Facebook URL' }, { key: 'instagram', label: 'Instagram URL' }, { key: 'linkedin', label: 'LinkedIn URL' }, { key: 'tiktok', label: 'TikTok URL' }, { key: 'other', label: 'Other social URL' }, { key: 'products', label: 'Products (separate names with ;)' },
 ]
 
@@ -39,7 +39,7 @@ function suggestTarget(header: string): Target | '' {
     company: 'company_name', companyname: 'company_name', business: 'company_name', businessname: 'company_name', organization: 'company_name',
     contact: 'contact_person', contactperson: 'contact_person', name: 'contact_person', phone: 'phone', mobile: 'phone', telephone: 'phone', email: 'email',
     address: 'address', category: 'category', industry: 'category', stage: 'stage', pipelinestage: 'stage', status: 'stage', nextfollowup: 'next_follow_up_date', followupdate: 'next_follow_up_date',
-    website: 'existing_website', url: 'existing_website', notes: 'notes', source: 'source', leadsource: 'source', leadtype: 'lead_direction', direction: 'lead_direction', leaddirection: 'lead_direction', leadirection: 'lead_direction', inboundoutbound: 'lead_direction', facebook: 'facebook', instagram: 'instagram', linkedin: 'linkedin', tiktok: 'tiktok', other: 'other', products: 'products', product: 'products',
+    website: 'existing_website', url: 'existing_website', notes: 'notes', source: 'source', leadsource: 'source', interest: 'interest_level', interestlevel: 'interest_level', leadtype: 'lead_direction', direction: 'lead_direction', leaddirection: 'lead_direction', leadirection: 'lead_direction', inboundoutbound: 'lead_direction', facebook: 'facebook', instagram: 'instagram', linkedin: 'linkedin', tiktok: 'tiktok', other: 'other', products: 'products', product: 'products',
   }
   return guesses[h] ?? ''
 }
@@ -98,6 +98,15 @@ export function LeadImportPage() {
         if (stageName && !stageId) { failures.push(`Row ${i + 1}: unknown stage “${stageName}”.`); continue }
         const directionValue = get('lead_direction').toLowerCase() || 'outbound'
         if (directionValue !== 'inbound' && directionValue !== 'outbound') { failures.push(`Row ${i + 1} (${company}): lead direction must be inbound or outbound.`); continue }
+        const rawInterest = normalized(get('interest_level'))
+        const interestValues: Record<string, 'very_interested' | 'semi_interested' | 'lightly_interested' | 'neutral'> = {
+          veryinterested: 'very_interested', veryhigh: 'very_interested',
+          semiinterested: 'semi_interested', interested: 'semi_interested',
+          lightlyinterested: 'lightly_interested', maybe: 'lightly_interested',
+          neutral: 'neutral', notinterested: 'neutral', unknown: 'neutral',
+        }
+        const interestLevel = rawInterest ? interestValues[rawInterest] : 'neutral'
+        if (!interestLevel) { failures.push(`Row ${i + 1} (${company}): use Very interested, Semi interested, Lightly interested, or Neutral.`); continue }
         const productList = get('products').split(/[;|]/).map((v) => v.trim()).filter(Boolean)
         const unknownProducts = productList.filter((name) => !productMap.has(normalized(name)))
         if (unknownProducts.length) { failures.push(`Row ${i + 1} (${company}): unknown product(s): ${unknownProducts.join(', ')}.`); continue }
@@ -105,7 +114,7 @@ export function LeadImportPage() {
         const payload = {
           company_name: company, contact_person: get('contact_person') || null, phone: get('phone') || null, email: get('email') || null, address: get('address') || null,
           category_id: categoryName ? categoryMap.get(normalized(categoryName)) ?? null : null,
-          stage_id: stageId!, lead_direction: directionValue, next_follow_up_date: get('next_follow_up_date') || null,
+          stage_id: stageId!, lead_direction: directionValue, interest_level: interestLevel, next_follow_up_date: get('next_follow_up_date') || null,
           existing_website: get('existing_website') || null, notes: get('notes') || null, source: get('source') || null,
           social_media: social, owner_id: user?.id,
         }
